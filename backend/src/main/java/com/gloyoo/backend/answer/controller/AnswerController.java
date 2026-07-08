@@ -3,13 +3,14 @@ package com.gloyoo.backend.answer.controller;
 import com.gloyoo.backend.answer.dto.AnswerRequestDto;
 import com.gloyoo.backend.answer.dto.AnswerResponseDto;
 import com.gloyoo.backend.answer.service.AnswerService;
+import com.gloyoo.backend.configuration.AuthenticatedUser;
 import com.gloyoo.backend.user.client.UserClient;
 import com.gloyoo.backend.user.dto.UserResponseDto;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,10 +50,10 @@ public class AnswerController {
     @PostMapping
     public ResponseEntity<AnswerResponseDto> createAnswer(
             @Valid @RequestBody AnswerRequestDto requestDto,
-            Authentication authentication,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @RequestHeader("Authorization") String authorization
     ) {
-        UserResponseDto user = getUser(authentication, authorization);
+        UserResponseDto user = getUser(authenticatedUser, authorization);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(answerService.createAnswer(requestDto, user.getId()));
     }
@@ -61,10 +62,10 @@ public class AnswerController {
     public AnswerResponseDto updateAnswer(
             @PathVariable UUID id,
             @Valid @RequestBody AnswerRequestDto requestDto,
-            Authentication authentication,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @RequestHeader("Authorization") String authorization
     ) {
-        UserResponseDto user = getUser(authentication, authorization);
+        UserResponseDto user = getUser(authenticatedUser, authorization);
         return answerService.updateAnswer(id, requestDto, user.getId());
     }
 
@@ -80,16 +81,11 @@ public class AnswerController {
                 .body(Map.of("message", exception.getMessage()));
     }
 
-    private UUID getUserId(Authentication authentication) {
-        if (!(authentication.getDetails() instanceof Map<?, ?> details) || details.get("uid") == null) {
-            throw new IllegalStateException("Authenticated user id is missing.");
+    private UserResponseDto getUser(AuthenticatedUser authenticatedUser, String authorization) {
+        if (authenticatedUser == null) {
+            throw new IllegalStateException("Authenticated user is missing.");
         }
-
-        return UUID.fromString(details.get("uid").toString());
-    }
-
-    private UserResponseDto getUser(Authentication authentication, String authorization) {
-        UserResponseDto user = userClient.getUserById(getUserId(authentication), authorization);
+        UserResponseDto user = userClient.getUserById(authenticatedUser.id(), authorization);
         if (user == null || user.getId() == null) {
             throw new EntityNotFoundException("Authenticated user was not found.");
         }

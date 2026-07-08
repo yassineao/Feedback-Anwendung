@@ -1,5 +1,6 @@
 package com.gloyoo.userbackend.user.controller;
 
+import com.gloyoo.userbackend.configuration.AuthenticatedUser;
 import com.gloyoo.userbackend.configuration.JwtService;
 import com.gloyoo.userbackend.user.dto.AuthRequest;
 import com.gloyoo.userbackend.user.dto.UserRequest;
@@ -11,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -103,12 +104,12 @@ public class UserController {
         }
     }
     @GetMapping("/me")
-    public ResponseEntity<?> me(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
+    public ResponseEntity<?> me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        if (authenticatedUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated"));
         }
 
-        return ResponseEntity.ok(authPayload(userService.findByIdOrThrow(authenticatedUserId(authentication))));
+        return ResponseEntity.ok(authPayload(userService.findByIdOrThrow(authenticatedUser.id().toString())));
     }
 
     @GetMapping("/{id}")
@@ -151,17 +152,6 @@ public class UserController {
         payload.put("email", claims.getSubject());
         payload.put("role", claims.get("role"));
         return payload;
-    }
-
-    private String authenticatedUserId(Authentication authentication) {
-        Object details = authentication.getDetails();
-        if (details instanceof Map<?, ?> detailsMap) {
-            Object uid = detailsMap.get("uid");
-            if (uid != null) {
-                return uid.toString();
-            }
-        }
-        throw new IllegalArgumentException("Authenticated user id missing");
     }
 
     private record TokenResponse(String refreshToken) {

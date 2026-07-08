@@ -15,7 +15,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Configuration
@@ -53,22 +52,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = (String) claims.get("role");
                 String user = (String) claims.get("user");
 
+                if (role == null || role.isBlank()) {
+                    throw new RuntimeException("role missing in token claims");
+                }
+
                 List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + claims.get("role"))
+                        new SimpleGrantedAuthority("ROLE_" + role)
                 );
 
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(user, null, authorities);
-
-                    authentication.setDetails(
-                            Map.of(
-                                    "uid", uid.toString(),
-                                    "role", role == null ? "" : role,
-                                    "user", user,
-                                    "email", claims.getSubject()
-                            )
+                    AuthenticatedUser principal = new AuthenticatedUser(
+                            uid,
+                            claims.getSubject(),
+                            user,
+                            role
                     );
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(principal, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception e) {
