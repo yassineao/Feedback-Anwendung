@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/", "/health", "/auth/**").permitAll()
+                        .requestMatchers("/", "/error", "/health", "/auth/**").permitAll()
                         .requestMatchers(
                                 "/user/health",
                                 "/user/login",

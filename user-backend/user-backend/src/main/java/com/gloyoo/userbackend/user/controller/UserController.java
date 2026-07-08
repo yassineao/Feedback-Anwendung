@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @Configuration
@@ -108,6 +109,11 @@ public class UserController {
         }
 
         return ResponseEntity.ok(authPayload(userService.findByIdOrThrow(authenticatedUserId(authentication))));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable UUID id) {
+        return ResponseEntity.ok(authPayload(userService.findByIdOrThrow(id.toString())));
     }
 
     @PostMapping("/logout")

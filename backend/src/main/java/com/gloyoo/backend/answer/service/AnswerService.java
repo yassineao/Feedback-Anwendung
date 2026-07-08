@@ -6,6 +6,7 @@ import com.gloyoo.backend.answer.entity.Answer;
 import com.gloyoo.backend.answer.repository.AnswerRepository;
 import com.gloyoo.backend.question.entity.Question;
 import com.gloyoo.backend.question.repository.QuestionRepository;
+import com.gloyoo.backend.question.service.ChoiceFormat;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,7 @@ public class AnswerService {
 
     public AnswerResponseDto createAnswer(AnswerRequestDto requestDto, UUID userId) {
         Question question = findQuestionById(requestDto.getQuestionId());
+        validateAnswer(requestDto, question);
 
         Answer answer = Answer.builder()
                 .answer(requestDto.getAnswer())
@@ -48,6 +50,7 @@ public class AnswerService {
     public AnswerResponseDto updateAnswer(UUID id, AnswerRequestDto requestDto, UUID userId) {
         Answer answer = findAnswerById(id);
         Question question = findQuestionById(requestDto.getQuestionId());
+        validateAnswer(requestDto, question);
 
         answer.setAnswer(requestDto.getAnswer());
         answer.setUserId(userId);
@@ -69,6 +72,14 @@ public class AnswerService {
     private Question findQuestionById(UUID id) {
         return questionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + id));
+    }
+
+    private void validateAnswer(AnswerRequestDto requestDto, Question question) {
+        ChoiceFormat.parseAnswer(
+                requestDto.getAnswer(),
+                question.getType(),
+                ChoiceFormat.parseQuestionChoices(question.getQuestion(), question.getType())
+        );
     }
 
     private AnswerResponseDto toResponseDto(Answer answer) {

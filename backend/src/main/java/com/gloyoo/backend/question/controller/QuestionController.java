@@ -2,6 +2,7 @@ package com.gloyoo.backend.question.controller;
 
 import com.gloyoo.backend.question.dto.QuestionRequestDto;
 import com.gloyoo.backend.question.dto.QuestionResponseDto;
+import com.gloyoo.backend.question.dto.QuestionStatisticsDto;
 import com.gloyoo.backend.question.service.QuestionService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -39,6 +40,11 @@ public class QuestionController {
     @GetMapping("/{id}")
     public QuestionResponseDto getQuestionById(@PathVariable UUID id) {
         return questionService.getQuestionById(id);
+    }
+
+    @GetMapping("/{id}/statistics")
+    public QuestionStatisticsDto getQuestionStatistics(@PathVariable UUID id) {
+        return questionService.getStatistics(id);
     }
 
     @PostMapping

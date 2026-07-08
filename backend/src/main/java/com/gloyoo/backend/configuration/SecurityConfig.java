@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/", "/health", "/auth/**").permitAll()
+                        .requestMatchers("/", "/error", "/health", "/auth/**").permitAll()
                         .requestMatchers(
                                 "/user/health",
                                 "/user/login",
@@ -52,6 +52,10 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // Admin endpoints
+                        .requestMatchers(HttpMethod.POST, "/questions", "/questions/").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/questions/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/questions/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/questions/*/statistics").hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
 
