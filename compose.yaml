@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: feedback
+      POSTGRES_USER: feedback
+      POSTGRES_PASSWORD: feedback_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - feedback-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U feedback -d feedback"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  user-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: users
+      POSTGRES_PASSWORD: users_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - user-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U users -d users"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  userbackend:
+    build:
+      context: ./user-backend/user-backend
+    env_file:
+      - ./user-backend/user-backend/.env
+    environment:
+      SERVER_PORT: 8081
+      SUPABASE_DB_URL: jdbc:postgresql://user-postgres:5432/users
+      SUPABASE_DB_USERNAME: users
+      SUPABASE_DB_PASSWORD: users_secret
+    ports:
+      - "8081:8081"
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/feedback
+      DATABASE_USERNAME: feedback
+      DATABASE_PASSWORD: feedback_secret
+      USER_SERVICE_URL: http://userbackend:8081
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      userbackend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  feedback-postgres-data:
+    name: backend_feedback-postgres-data
+  user-postgres-data:

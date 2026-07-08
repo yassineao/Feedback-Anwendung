@@ -1,3 +1,33 @@
 spring:
   application:
     name: backend
+  config:
+    import: optional:file:.env[.properties]
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/feedback}
+    username: ${DATABASE_USERNAME:feedback}
+    password: ${DATABASE_PASSWORD:feedback_secret}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+supabase:
+  url: ${SUPABASE_URL}
+  publishable-key: ${SUPABASE_PUBLISHABLE_KEY}
+  secret-key: ${SUPABASE_SECRET_KEY}
+  jwks-url: ${SUPABASE_JWKS_URL}
+
+jwt:
+  secret: ${JWT_SECRET:${SUPABASE_SECRET_KEY}}
+
+user-service:
+  url: ${USER_SERVICE_URL:http://localhost:8081}
