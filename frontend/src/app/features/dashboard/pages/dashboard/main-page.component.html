@@ -1,0 +1,629 @@
+<div class="min-h-screen bg-slate-950 text-slate-100">
+  <header class="border-b border-white/10">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8" aria-label="Main navigation">
+      <a href="/" class="flex items-center gap-3">
+        <span class="grid size-10 place-items-center rounded-xl bg-cyan-400 font-black text-slate-950">F</span>
+        <span class="text-lg font-semibold tracking-tight">Feedback Hub</span>
+      </a>
+
+      @if (isAuthenticated()) {
+        <div class="flex items-center gap-4">
+          <span class="hidden text-sm text-slate-400 sm:inline">Signed in as {{ currentUser()?.name }}</span>
+          <button
+            type="button"
+            (click)="logout()"
+            class="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/30 hover:bg-white/5"
+          >
+            Sign out
+          </button>
+        </div>
+      } @else {
+        <div class="flex items-center gap-3">
+          <a
+            routerLink="/auth"
+            [queryParams]="{ mode: 'login' }"
+            class="hidden rounded-lg px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10 sm:block"
+          >
+            Sign in
+          </a>
+          <a
+            routerLink="/auth"
+            [queryParams]="{ mode: 'signup' }"
+            class="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+          >
+            Get started
+          </a>
+        </div>
+      }
+    </nav>
+  </header>
+
+  @if (isAuthenticated()) {
+    <main class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+      <section class="mb-10 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+        <div>
+          <p class="text-sm font-semibold text-cyan-300">Workspace</p>
+          <h1 class="mt-2 text-4xl font-bold tracking-tight text-white">Take a survey by ID.</h1>
+          <p class="mt-3 max-w-2xl text-slate-400">
+            Enter a survey ID to answer it, or manage your own surveys when you need to create and review them.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+          <div>
+            <p class="text-2xl font-bold text-white">{{ surveys().length }}</p>
+            <p class="text-xs uppercase tracking-wider text-slate-500">Surveys</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-white">
+              @if (selectedSurvey(); as survey) {
+                {{ responseTotal(survey) }}
+              } @else {
+                0
+              }
+            </p>
+            <p class="text-xs uppercase tracking-wider text-slate-500">Responses</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-6 grid grid-cols-3 rounded-xl border border-white/10 bg-white/5 p-1">
+        <button
+          type="button"
+          (click)="setWorkspaceMode('take')"
+          class="rounded-lg px-4 py-3 text-sm font-semibold transition"
+          [class.bg-violet-300]="workspaceMode() === 'take'"
+          [class.text-slate-950]="workspaceMode() === 'take'"
+          [class.text-slate-400]="workspaceMode() !== 'take'"
+        >
+          Take survey
+        </button>
+        <button
+          type="button"
+          (click)="setWorkspaceMode('add')"
+          class="rounded-lg px-4 py-3 text-sm font-semibold transition"
+          [class.bg-emerald-300]="workspaceMode() === 'add'"
+          [class.text-slate-950]="workspaceMode() === 'add'"
+          [class.text-slate-400]="workspaceMode() !== 'add'"
+        >
+          Add survey
+        </button>
+        <button
+          type="button"
+          (click)="setWorkspaceMode('surveys')"
+          class="rounded-lg px-4 py-3 text-sm font-semibold transition"
+          [class.bg-cyan-300]="workspaceMode() === 'surveys'"
+          [class.text-slate-950]="workspaceMode() === 'surveys'"
+          [class.text-slate-400]="workspaceMode() !== 'surveys'"
+        >
+          Manage surveys
+        </button>
+      </section>
+
+      @if (workspaceMode() === 'add') {
+        <section class="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-emerald-300">Add a survey</p>
+            <h2 class="mt-2 text-2xl font-bold text-white">
+              @if (surveyWizardStep() === 'name') {
+                Name the survey
+              } @else {
+                Add question {{ draftQuestions().length + 1 }}
+              }
+            </h2>
+          </div>
+
+          @if (latestCreatedSurveyId()) {
+            <div class="mb-5 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3">
+              <p class="text-sm font-medium text-emerald-200">Survey ID</p>
+              <p class="mt-1 break-all font-mono text-sm text-emerald-100">{{ latestCreatedSurveyId() }}</p>
+            </div>
+          }
+
+          @if (surveyLoadError()) {
+            <p class="mb-5 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
+              {{ surveyLoadError() }}
+            </p>
+          }
+
+          @if (surveyWizardStep() === 'name') {
+            <form class="space-y-5" [formGroup]="surveyNameForm" (ngSubmit)="startSurveyQuestions()">
+              <div>
+                <label for="survey-title" class="mb-2 block text-sm font-medium text-slate-200">Survey name</label>
+                <input
+                  id="survey-title"
+                  type="text"
+                  formControlName="title"
+                  placeholder="Customer onboarding"
+                  class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/20"
+                />
+                @if (surveyNameForm.controls.title.touched && surveyNameForm.controls.title.invalid) {
+                  <p class="mt-2 text-sm text-rose-300">Survey name is required.</p>
+                }
+              </div>
+
+              <button
+                type="submit"
+                class="w-full rounded-xl bg-emerald-300 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+              >
+                Next
+              </button>
+            </form>
+          } @else {
+            <form class="space-y-5" [formGroup]="questionForm">
+              <div class="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
+                <p class="text-sm text-slate-400">Survey</p>
+                <p class="mt-1 font-semibold text-white">{{ draftSurveyTitle() }}</p>
+              </div>
+
+              @if (draftQuestions().length > 0) {
+                <div class="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
+                  <p class="text-sm font-medium text-slate-300">Added questions</p>
+                  <div class="mt-3 space-y-2">
+                    @for (question of draftQuestions(); track question.text) {
+                      <p class="rounded-lg bg-white/5 px-3 py-2 text-sm text-slate-200">{{ question.text }}</p>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div>
+                <label for="question-type" class="mb-2 block text-sm font-medium text-slate-200">Question type</label>
+                <select
+                  id="question-type"
+                  formControlName="type"
+                  (change)="draftChoices.set([])"
+                  class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/20"
+                >
+                  <option value="text">Text</option>
+                  <option value="single">One choice</option>
+                  <option value="multiple">Multiple choices</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="survey-question" class="mb-2 block text-sm font-medium text-slate-200">Question</label>
+                <textarea
+                  id="survey-question"
+                  formControlName="question"
+                  rows="3"
+                  placeholder="What should we improve next?"
+                  class="w-full resize-none rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/20"
+                ></textarea>
+                @if (questionForm.controls.question.touched && questionForm.controls.question.invalid) {
+                  <p class="mt-2 text-sm text-rose-300">Question is required.</p>
+                }
+              </div>
+
+              @if (questionForm.controls.type.value !== 'text') {
+                <div>
+                  <label for="question-choice" class="mb-2 block text-sm font-medium text-slate-200">Choices</label>
+                  <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <input
+                      id="question-choice"
+                      type="text"
+                      formControlName="choice"
+                      placeholder="Add a choice"
+                      class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/20"
+                    />
+                    <button
+                      type="button"
+                      (click)="addChoice()"
+                      class="rounded-xl border border-emerald-300/30 px-5 py-3 font-semibold text-emerald-200 transition hover:bg-emerald-300/10"
+                    >
+                      Add choice
+                    </button>
+                  </div>
+
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    @for (choice of draftChoices(); track choice; let choiceIndex = $index) {
+                      <button
+                        type="button"
+                        (click)="removeChoice(choiceIndex)"
+                        class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 transition hover:border-rose-300/40 hover:text-rose-200"
+                      >
+                        {{ choice }}
+                      </button>
+                    }
+                  </div>
+
+                  @if (draftChoices().length < 2) {
+                    <p class="mt-2 text-sm text-rose-300">Add at least two choices before continuing.</p>
+                  }
+                </div>
+              }
+
+              <div class="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  (click)="addQuestionAndContinue()"
+                  [disabled]="!canSaveQuestion()"
+                  class="rounded-xl border border-white/10 px-5 py-3 font-semibold text-slate-100 transition hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:border-white/5 disabled:text-slate-600"
+                >
+                  Next question
+                </button>
+                <button
+                  type="button"
+                  (click)="finishSurvey()"
+                  [disabled]="isSavingSurvey() || (!canSaveQuestion() && draftQuestions().length === 0)"
+                  class="rounded-xl bg-emerald-300 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                >
+                  {{ isSavingSurvey() ? 'Saving survey...' : 'Finish survey' }}
+                </button>
+              </div>
+            </form>
+          }
+        </section>
+      } @else if (workspaceMode() === 'take') {
+        <section class="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-violet-300">Take a survey</p>
+            <h2 class="mt-2 text-2xl font-bold text-white">Enter the survey ID</h2>
+          </div>
+
+          @if (isLoadingSurveys()) {
+            <p class="mb-5 rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-300">
+              Loading your surveys from the database...
+            </p>
+          }
+
+          @if (surveyLoadError()) {
+            <p class="mb-5 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
+              {{ surveyLoadError() }}
+            </p>
+          }
+
+          <form class="mb-6 grid gap-3 sm:grid-cols-[1fr_auto]" [formGroup]="surveyLookupForm" (ngSubmit)="findSurveyById()">
+            <div>
+              <label for="survey-id" class="mb-2 block text-sm font-medium text-slate-200">Survey ID</label>
+              <input
+                id="survey-id"
+                type="text"
+                formControlName="surveyId"
+                placeholder="team-pulse"
+                class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 font-mono text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-violet-300 focus:ring-2 focus:ring-violet-300/20"
+              />
+              @if (surveyLookupForm.controls.surveyId.touched && surveyLookupForm.controls.surveyId.invalid) {
+                <p class="mt-2 text-sm text-rose-300">Survey ID is required.</p>
+              }
+              @if (surveyLookupError()) {
+                <p class="mt-2 text-sm text-rose-300">{{ surveyLookupError() }}</p>
+              }
+            </div>
+            <button
+              type="submit"
+              class="self-end rounded-xl bg-violet-300 px-5 py-3 font-semibold text-slate-950 transition hover:bg-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+            >
+              Find survey
+            </button>
+          </form>
+
+          @if (selectedSurvey(); as survey) {
+            <div class="grid gap-6">
+              <div class="rounded-xl border border-white/10 bg-slate-950/50 p-5">
+                <p class="break-all font-mono text-xs text-violet-200">{{ survey.id }}</p>
+                @if (firstQuestion(survey); as question) {
+                  <p class="mt-3 text-sm font-medium text-violet-200">
+                    @if (question.type === 'text') {
+                      Text answer
+                    } @else if (question.type === 'single') {
+                      One choice
+                    } @else {
+                      Multiple choices
+                    }
+                  </p>
+                  <h3 class="mt-2 text-xl font-semibold text-white">{{ question.text }}</h3>
+
+                  @if (question.type === 'text') {
+                    <textarea
+                      rows="4"
+                      [value]="textResponse()"
+                      (input)="textResponse.set($any($event.target).value)"
+                      placeholder="Write your answer"
+                      class="mt-5 w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-300 focus:ring-2 focus:ring-violet-300/20"
+                    ></textarea>
+                  } @else {
+                    <div class="mt-5 space-y-3">
+                      @for (option of question.choices; track option) {
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 transition hover:border-violet-300/50">
+                          <input
+                            [type]="question.type === 'multiple' ? 'checkbox' : 'radio'"
+                            name="survey-option"
+                            class="size-4 accent-violet-300"
+                            [value]="option"
+                            [checked]="question.type === 'multiple' ? selectedOptions().includes(option) : selectedOption() === option"
+                            (change)="question.type === 'multiple' ? toggleSelectedOption(option, $any($event.target).checked) : selectedOption.set(option)"
+                          />
+                          <span class="font-medium text-slate-100">{{ option }}</span>
+                        </label>
+                      }
+                    </div>
+                  }
+
+                  @if (answerSubmitError()) {
+                    <p class="mt-5 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
+                      {{ answerSubmitError() }}
+                    </p>
+                  }
+
+                  <button
+                    type="button"
+                    (click)="submitResponse()"
+                    [disabled]="isSubmittingAnswer() || (question.type === 'text' ? !textResponse().trim() : question.type === 'multiple' ? selectedOptions().length === 0 : !selectedOption())"
+                    class="mt-5 w-full rounded-xl bg-violet-300 px-5 py-3 font-semibold text-slate-950 transition hover:bg-violet-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                  >
+                    {{ isSubmittingAnswer() ? 'Submitting answer...' : 'Submit response' }}
+                  </button>
+                }
+              </div>
+
+            </div>
+          }
+        </section>
+      } @else {
+        <section class="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-cyan-300">My surveys</p>
+            <h2 class="mt-2 text-2xl font-bold text-white">Survey stats</h2>
+          </div>
+
+          @if (isLoadingSurveys()) {
+            <p class="rounded-xl border border-white/10 bg-slate-950/50 p-5 text-slate-300">
+              Loading your surveys from the database...
+            </p>
+          }
+
+          @if (surveyLoadError()) {
+            <p class="rounded-xl border border-rose-300/20 bg-rose-300/10 p-5 text-sm text-rose-200">
+              {{ surveyLoadError() }}
+            </p>
+          }
+
+          <div class="grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
+            <div class="space-y-3">
+              @for (survey of surveys(); track survey.id) {
+                <button
+                  type="button"
+                  (click)="selectManagedSurvey(survey.id)"
+                  class="w-full rounded-xl border p-5 text-left transition"
+                  [class.border-cyan-300]="selectedManagedSurveyId() === survey.id"
+                  [class.bg-cyan-300]="selectedManagedSurveyId() === survey.id"
+                  [class.text-slate-950]="selectedManagedSurveyId() === survey.id"
+                  [class.border-white\/10]="selectedManagedSurveyId() !== survey.id"
+                  [class.bg-slate-950\/50]="selectedManagedSurveyId() !== survey.id"
+                  [class.text-slate-100]="selectedManagedSurveyId() !== survey.id"
+                >
+                  <span class="block text-lg font-semibold">{{ survey.title }}</span>
+                  <span class="mt-2 block break-all font-mono text-xs opacity-75">{{ survey.id }}</span>
+                  <span class="mt-3 block text-sm opacity-75">{{ responseTotal(survey) }} responses</span>
+                </button>
+              } @empty {
+                <p class="rounded-xl border border-white/10 bg-slate-950/50 p-5 text-slate-400">No surveys yet.</p>
+              }
+            </div>
+
+            @if (selectedManagedSurvey(); as survey) {
+              <article class="rounded-xl border border-white/10 bg-slate-950/50 p-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 class="text-xl font-semibold text-white">{{ survey.title }}</h3>
+                    <p class="mt-2 break-all font-mono text-xs text-cyan-200">{{ survey.id }}</p>
+                  </div>
+                  <div class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+                    <p class="text-2xl font-bold text-white">{{ responseTotal(survey) }}</p>
+                    <p class="text-xs uppercase tracking-wider text-slate-500">Responses</p>
+                  </div>
+                </div>
+
+                <div class="mt-5 grid gap-3 md:grid-cols-2">
+                  @for (question of survey.questions; track question.id) {
+                    <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <p class="text-sm font-medium text-slate-400">
+                        @if (question.type === 'text') {
+                          Text
+                        } @else if (question.type === 'single') {
+                          One choice
+                        } @else {
+                          Multiple choices
+                        }
+                      </p>
+                      <p class="mt-2 font-semibold text-slate-100">{{ question.text }}</p>
+                    </div>
+                  }
+                </div>
+
+                @if (responseTotal(survey) > 0) {
+                  <div class="mt-5 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p class="font-semibold text-white">Response graph</p>
+                        <p class="text-sm text-slate-400">Answer distribution for this survey</p>
+                      </div>
+                      <p class="text-sm font-semibold text-cyan-200">{{ responseTotal(survey) }} total responses</p>
+                    </div>
+
+                    <div class="mt-5 rounded-xl border border-white/10 bg-slate-950/60 p-4">
+                      <div class="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-3">
+                        <div class="flex h-36 flex-col justify-between text-right text-xs font-medium text-slate-500">
+                          <span>100%</span>
+                          <span>75%</span>
+                          <span>50%</span>
+                          <span>25%</span>
+                          <span>0%</span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                          <div class="relative flex h-36 min-w-full items-end gap-3 border-l border-b border-white/10 px-3">
+                            <div class="pointer-events-none absolute inset-x-3 top-0 border-t border-white/10"></div>
+                            <div class="pointer-events-none absolute inset-x-3 top-1/4 border-t border-white/10"></div>
+                            <div class="pointer-events-none absolute inset-x-3 top-1/2 border-t border-white/10"></div>
+                            <div class="pointer-events-none absolute inset-x-3 top-3/4 border-t border-white/10"></div>
+
+                            @for (result of responseEntries(survey); track result[0]; let answerIndex = $index) {
+                              <div class="relative z-10 flex h-full min-w-24 flex-1 flex-col items-center justify-end">
+                                <div
+                                  class="w-full max-w-16 rounded-t-lg transition-all"
+                                  [style.height.%]="responseBarHeight(survey, result[1])"
+                                  [style.background-color]="chartColor(answerIndex)"
+                                ></div>
+                              </div>
+                            }
+                          </div>
+
+                          <div class="mt-2 flex min-w-full gap-3 px-3">
+                            @for (result of responseEntries(survey); track result[0]) {
+                              <div class="flex min-w-24 flex-1 flex-col items-center gap-1">
+                                <span class="text-sm font-semibold text-white">{{ responsePercent(survey, result[1]) }}%</span>
+                                <span class="max-w-24 truncate text-center text-xs text-slate-400" [title]="result[0]">{{ result[0] }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="mt-5 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
+                    No answers yet. The graph will appear after users submit responses.
+                  </div>
+                }
+
+                <div class="mt-5 space-y-3">
+                  @for (result of responseEntries(survey); track result[0]) {
+                    <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div class="flex items-center justify-between gap-4">
+                        <span class="font-medium text-slate-200">{{ result[0] }}</span>
+                        <span class="text-sm font-semibold text-cyan-200">{{ result[1] }} responses</span>
+                      </div>
+                      <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+                        <div class="h-full rounded-full bg-cyan-300" [style.width.%]="responsePercent(survey, result[1])"></div>
+                      </div>
+                      <p class="mt-2 text-right text-xs text-slate-500">{{ responsePercent(survey, result[1]) }}%</p>
+                    </div>
+                  }
+                </div>
+              </article>
+            } @else {
+              <div class="rounded-xl border border-white/10 bg-slate-950/50 p-5 text-slate-400">
+                Select a survey to view its stats.
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </main>
+  } @else {
+    <main>
+      <section class="relative isolate overflow-hidden">
+        <div class="absolute inset-x-0 top-0 -z-10 flex justify-center blur-3xl" aria-hidden="true">
+          <div class="h-72 w-72 rounded-full bg-cyan-500/20"></div>
+        </div>
+
+        <div class="mx-auto grid max-w-7xl gap-16 px-6 py-24 lg:grid-cols-2 lg:items-center lg:px-8 lg:py-32">
+          <div>
+            <div class="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-200">
+              <span class="size-2 rounded-full bg-cyan-300"></span>
+              Better decisions start with honest feedback
+            </div>
+
+            <h1 class="max-w-3xl text-5xl font-bold tracking-tight text-white sm:text-6xl">
+              Turn every response into meaningful action.
+            </h1>
+            <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+              Create focused surveys, collect clear answers, and understand the results from one simple workspace.
+            </p>
+
+            <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+              <a
+                routerLink="/auth"
+                [queryParams]="{ mode: 'signup' }"
+                class="rounded-xl bg-cyan-400 px-6 py-3.5 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:bg-cyan-300"
+              >
+                Create your first survey
+              </a>
+              <a
+                href="#workflow"
+                class="rounded-xl border border-white/15 px-6 py-3.5 text-center font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
+              >
+                See how it works
+              </a>
+            </div>
+          </div>
+
+          <div class="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-cyan-950/40 backdrop-blur">
+            <div class="rounded-2xl bg-slate-900 p-6">
+              <div class="flex items-start justify-between gap-6">
+                <div>
+                  <p class="text-sm font-medium text-cyan-300">Live feedback</p>
+                  <h2 class="mt-2 text-xl font-semibold">How was your experience?</h2>
+                </div>
+                <span class="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">Active</span>
+              </div>
+
+              <div class="mt-8 space-y-3">
+                <button class="flex w-full items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/5">
+                  <span class="grid size-9 place-items-center rounded-lg bg-cyan-400 font-bold text-slate-950">1</span>
+                  <span class="font-medium">Excellent</span>
+                </button>
+                <button class="flex w-full items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/5">
+                  <span class="grid size-9 place-items-center rounded-lg bg-slate-700 font-bold">2</span>
+                  <span class="font-medium">Good</span>
+                </button>
+                <button class="flex w-full items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-cyan-300/40 hover:bg-cyan-300/5">
+                  <span class="grid size-9 place-items-center rounded-lg bg-slate-700 font-bold">3</span>
+                  <span class="font-medium">Needs improvement</span>
+                </button>
+              </div>
+
+              <div class="mt-6 flex items-center justify-between border-t border-white/10 pt-5 text-sm text-slate-400">
+                <span>1,248 responses</span>
+                <span>82% positive</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="workflow" class="mx-auto max-w-7xl px-6 py-24 lg:px-8">
+        <div class="grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div>
+            <p class="font-semibold text-cyan-300">Simple workflow</p>
+            <h2 class="mt-3 text-3xl font-bold tracking-tight text-white">From question to insight in three steps.</h2>
+            <p class="mt-5 leading-7 text-slate-400">A focused process keeps administrators in control and respondents moving quickly.</p>
+          </div>
+
+          <ol class="space-y-4">
+            <li class="flex gap-5 rounded-2xl border border-white/10 p-6">
+              <span class="text-2xl font-bold text-cyan-300">01</span>
+              <div>
+                <h3 class="font-semibold text-white">Create the questions</h3>
+                <p class="mt-2 text-slate-400">Administrators define the survey and available choices.</p>
+              </div>
+            </li>
+            <li class="flex gap-5 rounded-2xl border border-white/10 p-6">
+              <span class="text-2xl font-bold text-cyan-300">02</span>
+              <div>
+                <h3 class="font-semibold text-white">Collect responses</h3>
+                <p class="mt-2 text-slate-400">Authenticated users submit answers through a clear, distraction-free experience.</p>
+              </div>
+            </li>
+            <li class="flex gap-5 rounded-2xl border border-white/10 p-6">
+              <span class="text-2xl font-bold text-cyan-300">03</span>
+              <div>
+                <h3 class="font-semibold text-white">Review the results</h3>
+                <p class="mt-2 text-slate-400">Aggregated backend statistics turn collected answers into useful signals.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <footer id="about" class="border-t border-white/10">
+      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-8 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <p>Feedback Hub. Built for clearer decisions.</p>
+        <p>Private by design. Simple by default.</p>
+      </div>
+    </footer>
+  }
+</div>
