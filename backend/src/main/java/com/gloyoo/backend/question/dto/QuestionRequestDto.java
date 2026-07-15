@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.UUID;
+
 @Data
 public class QuestionRequestDto {
     @NotBlank
@@ -12,4 +14,7 @@ public class QuestionRequestDto {
 
     @NotNull
     private QuestionType type;
+
+    @NotNull
+    private UUID surveyId;
 }

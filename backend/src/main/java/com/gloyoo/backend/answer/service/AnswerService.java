@@ -36,6 +36,9 @@ public class AnswerService {
 
     public AnswerResponseDto createAnswer(AnswerRequestDto requestDto, UUID userId) {
         Question question = findQuestionById(requestDto.getQuestionId());
+        if (answerRepository.existsByUserIdAndQuestionSurveyId(userId, question.getSurvey().getId())) {
+            throw new IllegalArgumentException("You have already answered this survey.");
+        }
         validateAnswer(requestDto, question);
 
         Answer answer = Answer.builder()

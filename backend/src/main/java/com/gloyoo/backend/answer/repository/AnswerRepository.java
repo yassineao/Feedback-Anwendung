@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface AnswerRepository extends JpaRepository<Answer, UUID> {
     List<Answer> findAllByQuestionId(UUID questionId);
+
+    boolean existsByUserIdAndQuestionSurveyId(UUID userId, UUID surveyId);
 }

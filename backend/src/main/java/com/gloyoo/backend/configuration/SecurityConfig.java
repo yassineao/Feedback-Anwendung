@@ -52,10 +52,6 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // Admin endpoints
-                        .requestMatchers(HttpMethod.POST, "/questions", "/questions/").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/questions/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/questions/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/questions/*/statistics").hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
 

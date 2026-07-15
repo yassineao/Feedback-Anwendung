@@ -16,4 +16,5 @@ public class QuestionResponseDto {
     private UUID id;
     private String question;
     private QuestionType type;
+    private UUID surveyId;
 }

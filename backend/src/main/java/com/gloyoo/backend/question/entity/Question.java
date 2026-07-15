@@ -1,5 +1,6 @@
 package com.gloyoo.backend.question.entity;
 
+import com.gloyoo.backend.survey.entity.Survey;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,4 +23,7 @@ public class Question {
     @Column(name = "type", nullable = false)
     private QuestionType type;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "survey_id", nullable = false)
+    private Survey survey;
 }

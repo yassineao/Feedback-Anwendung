@@ -59,9 +59,9 @@ public class UserController {
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest req) {
 
         try {
-            User u = userService.findByEmailOrThrow(req.getEmail());
+            User u = userService.findByEmailOrThrow(req.email());
 
-            if (!userService.checkPassword(u, req.getPassword())) {
+            if (!userService.checkPassword(u, req.password())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid credentials"));
             }
 
